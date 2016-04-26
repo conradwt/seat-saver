@@ -22,3 +22,9 @@ erl_crash.dump
 # secrets file as long as you replace its contents by environment
 # variables.
 /config/prod.secret.exs
+
+# Exclude the elm core files.
+web/elm/elm-stuff/
+
+# Exclude auto generated files.
+/web/static/vendor/seatsaver.js
