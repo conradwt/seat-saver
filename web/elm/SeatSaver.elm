@@ -1,29 +1,24 @@
-module SeatSaver where
+module SeatSaver exposing ( Model, Msg, init, update, view )
 
 import Html exposing (..)
 import Html.Attributes exposing (class)
 import Html.Events exposing (onClick)
-import StartApp
-import Effects exposing (Effects, Never)
+import Html.App as Html
 import Task exposing (Task)
 import Http
 import Json.Decode as Json exposing ((:=))
 
 app =
-  StartApp.start
-    { init = init
-    , update = update
-    , view = view
-    , inputs = []
-    }
+  Html.program
+    { init = init, update = update, view = view, subscriptions = \_ -> Sub.none }
 
-main : Signal Html
+main : Program Never
 main =
   app.html
 
-port tasks : Signal (Task Never ())
-port tasks =
-  app.tasks
+-- port tasks : Signal (Task.Task Never ()) -- FIXME
+-- port tasks =
+--   app.tasks
 
 -- MODEL
 
@@ -35,15 +30,15 @@ type alias Seat =
 type alias Model =
   List Seat
 
-init : (Model, Effects Action)
+init : (Model, Cmd Msg)
 init =
   ([], fetchSeats)
 
 -- UPDATE
 
-type Action = Toggle Seat | SetSeats (Maybe Model)
+type Msg = Toggle Seat | SetSeats (Maybe Model)
 
-update : Action -> Model -> (Model, Effects Action)
+update : Msg -> Model -> (Model, Cmd Msg)
 update action model =
   case action of
     Toggle seatToToggle ->
@@ -53,40 +48,39 @@ update action model =
             { seatFromModel | occupied = not seatFromModel.occupied }
           else seatFromModel
       in
-        (List.map updateSeat model, Effects.none)
+        (List.map updateSeat model, Cmd.none)
     SetSeats seats ->
       let
         newModel = Maybe.withDefault model seats
       in
-        (newModel, Effects.none)
+        (newModel, Cmd.none)
 
 -- VIEW
 
-view : Signal.Address Action -> Model -> Html
-view address model =
-  ul [ class "seats" ] (List.map (seatItem address) model)
+view : Model -> Html Msg
+view model =
+  ul [ class "seats" ] (List.map seatItem model)
 
-seatItem : Signal.Address Action -> Seat -> Html
-seatItem address seat =
+seatItem : Seat -> Html Msg
+seatItem seat =
   let
     occupiedClass =
       if seat.occupied then "occupied" else "available"
   in
     li
       [ class ("seat " ++ occupiedClass)
-      , onClick address (Toggle seat)
+      , onClick (Toggle seat)
       ]
       [ text (toString seat.seatNo) ]
 
 -- EFFECTS
 
-fetchSeats: Effects Action
+fetchSeats: Cmd Msg
 fetchSeats =
   Http.get decodeSeats "http://localhost:4000/api/seats"
     |> Task.toMaybe
     |> Task.map SetSeats
-    |> Effects.task
-
+    |> Effects.task -- FIXME
 
 decodeSeats: Json.Decoder Model
 decodeSeats =
