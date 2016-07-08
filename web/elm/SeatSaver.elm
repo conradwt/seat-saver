@@ -5,16 +5,14 @@ import Html.Attributes exposing (class)
 import Html.Events exposing (onClick)
 import Html.App as Html
 import Task exposing (Task)
+import Task.Extra
 import Http
 import Json.Decode as Json exposing ((:=))
 
-app =
-  Html.program
-    { init = init, update = update, view = view, subscriptions = \_ -> Sub.none }
-
 main : Program Never
 main =
-  app.html
+  Html.program
+    { init = init, update = update, view = view, subscriptions = \_ -> Sub.none }
 
 -- port tasks : Signal (Task.Task Never ()) -- FIXME
 -- port tasks =
@@ -80,7 +78,7 @@ fetchSeats =
   Http.get decodeSeats "http://localhost:4000/api/seats"
     |> Task.toMaybe
     |> Task.map SetSeats
-    |> Effects.task -- FIXME
+    |> Task.Extra.performFailproof identity -- FIXME
 
 decodeSeats: Json.Decoder Model
 decodeSeats =
